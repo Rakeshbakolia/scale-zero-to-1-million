@@ -1,0 +1,53 @@
+# AWS k6 results (append-only log)
+# BASE_URL=http://scale-zero-to-million-alb-277154478.ap-south-1.elb.amazonaws.com
+
+## Phase 3 — 2026-09-23
+
+| script | VUs | duration | http_reqs/s | p95 ms | errors |
+|--------|-----|----------|-------------|--------|--------|
+| list-users.js | 10 | 30s | ~29 | ~394 | 0% |
+| signup.js | 10 | 30s | ~22 | ~485 | 0% |
+| mixed.js | 15 | 1m | ~33 | ~716 | 0% |
+
+mixed.js: 1991 iterations, 100% checks (signup ok, list ok, health ok).
+
+## Phase 4
+
+_(run list-users.js after terraform apply + deploy; compare p95 to Phase 3 list-users ~394ms)_
+
+### Spot check before ElastiCache apply (agent, API only)
+
+| list-users.js | 10 | 30s | ~73 | ~55 | 0% | Phase 3 infra still; Redis not in terraform state yet |
+
+## Phase 4 — 2026-09-23 (ElastiCache + list cache)
+
+| script | VUs | duration | http_reqs/s | p95 ms | errors | notes |
+|--------|-----|----------|-------------|--------|--------|-------|
+| list-users.js | 10 | 30s | ~52 | ~81 | **84%** | Ran **during** ASG instance refresh — ignore |
+| list-users.js | 10 | 30s | ~72 | ~58 | 0% | After refresh settled; Redis cache warm |
+
+Compare Phase 3 list-users: ~29 RPS, p95 ~394 ms.
+
+| list-users.js (confirm) | 10 | 30s | ~75 | ~37 | 0% | 2026-09-23 re-run |
+
+## Phase 5 — CloudFront
+
+**URL:** https://dbczpee0qtbbv.cloudfront.net
+
+| list-users.js (via CF) | 10 | 30s | ~75 | ~37 | 0% | BASE_URL=CloudFront |
+
+## Phase 7 — 2026-09-23 (~50k users, keyset API)
+
+Seed: SSM on ASG instance, +45827 users (4173 → 50000).
+
+| script | VUs | duration | http_reqs/s | p95 ms | errors | notes |
+|--------|-----|----------|-------------|--------|--------|-------|
+| list-users-deep.js | 10 | 30s | ~65 | ~87 | 0% | MAX_PAGE=2500; max ~514 ms |
+
+## Phase 7 — 2026-09-23 (~1M users)
+
+| list-users-deep.js | 10 | 2m | ~18.5 | ~1280 | 0% | MAX_PAGE=50000; max ~3030 ms |
+
+## Phase 6 — soak (mixed.js, ALB)
+
+| mixed.js | 15 | 1m | ~33 | ~725 | 0% | Phase 6 observability; 2011 checks |

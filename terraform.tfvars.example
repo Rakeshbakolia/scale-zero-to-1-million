@@ -1,0 +1,13 @@
+aws_region      = "ap-south-1"
+project_name    = "scale-zero-to-million"
+scaling_phase   = 1
+asg_min_size    = 1
+asg_max_size    = 2
+instance_type   = "t3.micro"
+db_instance_class = "db.t3.micro"
+
+# Lab only — set to your public IP/32 for better security, e.g. "1.2.3.4/32"
+allowed_cidr    = "0.0.0.0/0"
+
+# Required for apply (copy to terraform.tfvars and change):
+# admin_api_key = "change-me-to-a-long-random-string"
